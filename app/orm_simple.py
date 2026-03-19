@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
+
 
 from app.db import get_session
-from app.models import Author, Book
-from app.schemas import AuthorCreate, AuthorOut, AuthorUpdate, BookCreate, BookOut
+from app.models import Author, Book, Person
+from app.schemas import AuthorCreate, AuthorOut, AuthorUpdate, BookCreate, BookOut, PersonOut, PersonWithBooks
 
 router = APIRouter(prefix="/orm", tags=["ORM simple"])
 
@@ -70,3 +71,58 @@ def create_book(
     session.commit()
     session.refresh(book)
     return book
+
+@router.delete("/books/{book_id}", status_code=204)
+def delete_book(
+    book_id: int,
+    session: Session = Depends(get_session),
+) -> None:
+    stmt = select(Book).where(Book.id == book_id)
+    book = session.scalar(stmt)
+
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    try:
+        session.delete(book)
+        session.commit()
+    except:
+        raise HTTPException(
+            status_code=409,
+            detail="Impossible de supprimer ce livre car il est lié à d'autres enregistrements."
+            )  
+
+@router.get("/persons", response_model=list[PersonOut])
+def list_persons(session: Session = Depends(get_session)) -> list[PersonOut]:
+    stmt = select(Person).order_by(Person.id)
+    return session.scalars(stmt).all()
+
+@router.post("/persons", response_model=PersonOut, status_code=201)
+def create_person(
+    payload: PersonOut,
+    session: Session = Depends(get_session),
+) -> PersonOut:
+    person = Person(first_name=payload.first_name, last_name=payload.last_name)
+    session.add(person)
+    session.commit()
+    session.refresh(person)
+    return person
+
+@router.get("/persons-with-books", response_model=list[PersonWithBooks])
+def list_persons_with_books(session: Session = Depends(get_session)) -> list[PersonWithBooks]:
+
+
+    stmt = (
+        select(Person)
+        .options(selectinload(Person.books_owned))
+        .order_by(Person.id)
+    )
+    persons = session.scalars(stmt).all()
+    return [
+        PersonWithBooks(
+            first_name=person.first_name,
+            last_name=person.last_name,
+            books_owned_titles=[book.title for book in person.books_owned]
+        )
+        for person in persons
+    ]

@@ -1,5 +1,6 @@
 import os
 
+from app.models import Base, Person
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -27,6 +28,7 @@ def init_db() -> None:
     from app.models import Base, Author, Book, Tag, BookTag, Publisher
     from sqlalchemy import func, select
 
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine) # Create tables if they don't exist
 
     with SessionLocal() as session:
@@ -59,9 +61,17 @@ def init_db() -> None:
         session.add_all(authors)
         session.flush()
 
+        persons = [
+            Person(first_name="Hadrien", last_name="Fuentes"),
+            Person(first_name="Alice", last_name="Dupont"),
+            Person(first_name="Bob", last_name="Smith"),
+            ]
+        session.add_all(persons)
+        session.flush()
+
         books = [
             # Informatique
-            Book(title="Notes on the Analytical Engine", pages=120, author_id=authors[0].id, publisher_id=publishers[3].id),
+            Book(title="Notes on the Analytical Engine", pages=120, author_id=authors[0].id, publisher_id=publishers[3].id, owner_id = persons[0].id),
             Book(title="Compilers and Cobol", pages=220, author_id=authors[1].id, publisher_id=publishers[1].id),
             Book(title="Computing Machinery and Intelligence", pages=90, author_id=authors[2].id, publisher_id=publishers[3].id),
             Book(title="The Art of Computer Programming Vol. 1", pages=672, author_id=authors[3].id, publisher_id=publishers[1].id),
@@ -132,4 +142,6 @@ def init_db() -> None:
             BookTag(book_id=books[13].id, tag_id=tags[8].id, tagged_at=date(2024, 8, 5)),
         ]
         session.add_all(book_tags)
+        session.flush()
+        
         session.commit()

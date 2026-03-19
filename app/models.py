@@ -43,6 +43,9 @@ class Book(Base):
 
     book_tags: Mapped[list["BookTag"]] = relationship("BookTag", back_populates="book")
 
+    owner_id: Mapped[int | None] = mapped_column(ForeignKey("persons.id"))
+    owner: Mapped["Person"] = relationship("Person", back_populates="books_owned")
+
 
 class Tag(Base):
     __tablename__ = "tags"
@@ -64,3 +67,13 @@ class BookTag(Base):
 
     book: Mapped["Book"] = relationship("Book", back_populates="book_tags")
     tag: Mapped["Tag"] = relationship("Tag", back_populates="book_tags")
+
+
+class Person(Base):
+    __tablename__ = "persons"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    first_name: Mapped[str] = mapped_column(String(50))
+    last_name: Mapped[str] = mapped_column(String(50))
+
+    books_owned: Mapped[list["Book"]] = relationship("Book", back_populates="owner")

@@ -78,6 +78,14 @@ class BookWithPublisher(BaseModel):
     pages: int
     publisher_name: str | None
 
+class BookFull(BaseModel):
+    id: int
+    title: str
+    pages: int
+    author_name: str
+    publisher_name: str | None
+    owner_name: str | None
+
 
 class TagOut(BaseModel):
     name: str
@@ -92,3 +100,44 @@ class BookWithTags(BaseModel):
     tags: list[TagOut]
 
     model_config = {"from_attributes": True}
+
+class PersonOut(BaseModel):
+    first_name: str
+    last_name: str
+
+    model_config = {"from_attributes": True}
+
+class PersonCreate(BaseModel):
+    first_name: str = Field(..., min_length=1, max_length=50)
+    last_name: str = Field(..., min_length=1, max_length=50)
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "first_name": "Hadrien",
+                "last_name": "Fuentes",
+            }
+        }
+    }
+
+class PersonWithBooks(BaseModel):
+    first_name: str
+    last_name: str
+    books_owned_titles: list[str]
+
+    model_config = {"from_attributes": True}
+
+class PersonWithBookCount(BaseModel):
+    first_name: str
+    last_name: str
+    book_count: int
+
+    model_config = {"from_attributes": True}
+
+class Stats(BaseModel):
+    book_count: int
+    author_count: int
+    tag_count: int
+    biggest_book_title: str | None
+    biggest_book_pages: int | None
+    book_mean_pages: float | None
